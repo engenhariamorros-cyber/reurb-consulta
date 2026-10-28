@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta de Processo REURB – Morros/MA</title>
+<meta name="robots" content="noindex">
+<script>
+  // ============================================================================
+  //  CONFIGURAÇÃO – troque só estas duas linhas (Supabase > Project Settings > API)
+  //  A chave "anon" é PÚBLICA por natureza: ela só permite consultar um processo
+  //  pelo código de autenticidade. NUNCA coloque aqui a chave de escrita nem a
+  //  chave "service_role".
+  // ============================================================================
+  window.REURB_CONFIG = {
+    supabaseUrl:  "https://yujymlzbsoxpthivvawn.supabase.co/rest/v1/",
+    supabaseAnon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1anltbHpic294cHRoaXZ2YXduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTM0NTYsImV4cCI6MjEwODc4OTQ1Nn0.oiF4zF6Zdd7dHw9vw_p_YNPAs7Aj9ZB0-DLQs5kB1K8"
+  };
+</script>
+<style>
+  :root{
+    --navy:#052A5C; --azul:#0A5FD1; --azul-h:#0850B0; --bg:#F3F6FB; --card:#fff; --borda:#D9E2F0;
+    --texto:#14233D; --mudo:#60708A; --ok:#1E7B45; --ok-bg:#E6F4EA; --ok-bd:#2E8B57;
+    --erro:#B3261E; --erro-bg:#FCEBEA; --aviso:#8A5A00; --aviso-bg:#FFF4D6; --aviso-bd:#E0B23F;
+    --cinza:#5F6B7A; --cinza-bg:#EEF1F5;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--texto);font:16px/1.5 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  header{background:var(--navy);color:#fff;text-align:center;padding:22px 16px 20px}
+  header h1{margin:0;font-size:1.45rem;font-weight:700}
+  header p{margin:6px 0 0;opacity:.85;font-size:.95rem}
+  main{max-width:660px;margin:0 auto;padding:24px 16px 40px}
+  .card{background:var(--card);border:1px solid var(--borda);border-radius:12px;padding:20px 22px;margin-bottom:18px}
+  label{display:block;font-weight:600;color:var(--navy);margin-bottom:8px}
+  input{width:100%;font:500 1.25rem/1 Consolas,"Courier New",monospace;letter-spacing:.12em;text-transform:uppercase;
+        padding:14px;border:1px solid var(--borda);border-radius:8px;color:var(--texto);background:#fff}
+  input:focus{outline:2px solid var(--azul);outline-offset:1px;border-color:var(--azul)}
+  button{margin-top:14px;width:100%;padding:13px;border:0;border-radius:8px;background:var(--azul);color:#fff;
+         font-size:1.1rem;font-weight:700;cursor:pointer}
+  button:hover{background:var(--azul-h)}
+  button:disabled{opacity:.6;cursor:wait}
+  .res h2{margin:0 0 10px;font-size:1.2rem}
+  .ok{background:var(--ok-bg);border-color:var(--ok-bd)} .ok h2{color:var(--ok)}
+  .nao{background:var(--erro-bg);border-color:var(--erro)} .nao h2{color:var(--erro)}
+  dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;margin:12px 0 0}
+  dt{color:var(--mudo)} dd{margin:0;font-weight:600}
+  h3{margin:0 0 12px;font-size:1.05rem;color:var(--navy)}
+  .rotulo{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mudo);font-weight:600}
+  .status{display:inline-block;margin:6px 0 4px;padding:8px 14px;border-radius:999px;font-weight:700;font-size:1.05rem;
+          background:#E6EFFC;color:var(--azul)}
+  .status.pendencia{background:var(--aviso-bg);color:var(--aviso);border:1px solid var(--aviso-bd)}
+  .status.final{background:var(--cinza-bg);color:var(--cinza)}
+  .status.concluido{background:var(--ok-bg);color:var(--ok)}
+  .desde{color:var(--mudo);font-size:.9rem}
+  .msg{margin-top:12px;border-radius:10px;padding:12px 14px;background:#EEF4FD;border:1px solid #BCD3F5;color:var(--navy)}
+  .msg.pendencia{background:var(--aviso-bg);border-color:var(--aviso-bd);color:var(--aviso)}
+  .msg b{display:block;margin-bottom:2px}
+  .etapas{list-style:none;margin:0;padding:0}
+  .etapas li{position:relative;padding:0 0 16px 40px;min-height:28px}
+  .etapas li:last-child{padding-bottom:0}
+  .etapas li::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--borda)}
+  .etapas li:last-child::before{display:none}
+  .etapas li.feito::before{background:var(--ok-bd)}
+  .bola{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+        font-size:.85rem;font-weight:700;border:2px solid var(--borda);background:#fff;color:var(--mudo)}
+  .feito .bola{background:var(--ok);border-color:var(--ok);color:#fff}
+  .atual .bola{background:var(--azul);border-color:var(--azul);color:#fff;box-shadow:0 0 0 5px #0A5FD122}
+  .nome-et{display:block;padding-top:3px;font-weight:600}
+  .futuro .nome-et{color:var(--mudo);font-weight:400}
+  .hist{list-style:none;margin:0;padding:0;font-size:.93rem}
+  .hist li{padding:9px 0;border-top:1px solid var(--borda)}
+  .hist li:first-child{border-top:0;padding-top:0}
+  .hist .d{display:block;color:var(--mudo);font-size:.85rem;font-variant-numeric:tabular-nums}
+  .hist .m{display:block;color:var(--mudo)}
+  .nota{color:var(--mudo);font-size:.88rem;margin:4px 2px}
+  [hidden]{display:none!important}
+  @media (max-width:480px){
+    header h1{font-size:1.2rem} .card{padding:16px} dl{grid-template-columns:1fr;gap:0} dd{margin-bottom:8px}
+  }
+  @media print{header{background:none;color:var(--navy)} #form{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Acompanhamento de Processo – REURB</h1>
+  <p>Comissão Municipal de Regularização Fundiária – Morros/MA</p>
+</header>
+<main>
+  <form id="form" class="card" autocomplete="off">
+    <label for="codigo">Código de autenticidade</label>
+    <input id="codigo" name="c" placeholder="XXXXX-XXXXX" maxlength="11" spellcheck="false" required>
+    <button id="btn" type="submit">Consultar</button>
+  </form>
+
+  <section id="nao" class="card res nao" hidden aria-live="polite">
+    <h2>✕ Código não encontrado</h2>
+    <p style="margin:0">Confira o código impresso no seu comprovante de cadastro (10 letras e números, por exemplo
+      <b>ABCDE-23456</b>). Em caso de dúvida, procure a Prefeitura com o seu comprovante.</p>
+  </section>
+
+  <section id="erro" class="card res nao" hidden>
+    <h2>Consulta indisponível</h2>
+    <p style="margin:0" id="erroMsg">Não foi possível conectar. Verifique a internet e tente novamente.</p>
+  </section>
+
+  <div id="ok" hidden aria-live="polite">
+    <section class="card res ok">
+      <h2>✓ Processo autêntico</h2>
+      <div>Este processo consta na Regularização Fundiária da Prefeitura.</div>
+      <dl id="dados"></dl>
+    </section>
+
+    <section class="card">
+      <div class="rotulo">Situação atual</div>
+      <div id="status" class="status"></div>
+      <div id="desde" class="desde"></div>
+      <div id="msg" class="msg" hidden><b id="msgTit"></b><span id="msgTxt"></span></div>
+    </section>
+
+    <section class="card">
+      <h3>Etapas do processo</h3>
+      <ol class="etapas" id="etapas"></ol>
+    </section>
+
+    <section class="card" id="cardHist">
+      <h3>Histórico</h3>
+      <ul class="hist" id="hist"></ul>
+    </section>
+  </div>
+
+  <p class="nota">Por privacidade (LGPD), exibimos apenas dados parciais do beneficiário.</p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var CFG = window.REURB_CONFIG || {};
+
+  // ---------- SHA-256 (usa o do navegador; cópia em JS se a página for aberta sem HTTPS)
+  function sha256js(ascii) {
+    function r(v, n) { return (v >>> n) | (v << (32 - n)); }
+    var K = [], H = [], primo = {}, c = 2, n = 0, i, j;
+    while (n < 64) {
+      if (!primo[c]) {
+        for (i = 0; i < 313; i += c) primo[i] = c;
+        if (n < 8) H[n] = (Math.pow(c, .5) * 4294967296) | 0;
+        K[n++] = (Math.pow(c, 1 / 3) * 4294967296) | 0;
+      }
+      c++;
+    }
+    var bytes = [];
+    for (i = 0; i < ascii.length; i++) bytes.push(ascii.charCodeAt(i) & 255);
+    var bits = bytes.length * 8;
+    bytes.push(128);
+    while (bytes.length % 64 !== 56) bytes.push(0);
+    for (i = 7; i >= 0; i--) bytes.push(i > 3 ? 0 : (bits >>> (i * 8)) & 255);
+    var w = [];
+    for (j = 0; j < bytes.length; j += 64) {
+      for (i = 0; i < 16; i++) w[i] = (bytes[j + i * 4] << 24) | (bytes[j + i * 4 + 1] << 16) | (bytes[j + i * 4 + 2] << 8) | bytes[j + i * 4 + 3];
+      for (i = 16; i < 64; i++) {
+        var s0 = r(w[i - 15], 7) ^ r(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+        var s1 = r(w[i - 2], 17) ^ r(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      var a = H.slice(0, 8);
+      for (i = 0; i < 64; i++) {
+        var t1 = a[7] + (r(a[4], 6) ^ r(a[4], 11) ^ r(a[4], 25)) + ((a[4] & a[5]) ^ (~a[4] & a[6])) + K[i] + w[i];
+        var t2 = (r(a[0], 2) ^ r(a[0], 13) ^ r(a[0], 22)) + ((a[0] & a[1]) ^ (a[0] & a[2]) ^ (a[1] & a[2]));
+        a = [(t1 + t2) | 0].concat(a);
+        a[4] = (a[4] + t1) | 0;
+        a.length = 8;
+      }
+      for (i = 0; i < 8; i++) H[i] = (H[i] + a[i]) | 0;
+    }
+    return H.map(function (x) { return ("00000000" + (x >>> 0).toString(16)).slice(-8); }).join("");
+  }
+  function sha256(txt) {
+    if (window.crypto && crypto.subtle && window.TextEncoder) {
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt)).then(function (b) {
+        return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+      }).catch(function () { return sha256js(txt); });
+    }
+    return Promise.resolve(sha256js(txt));
+  }
+  // ---------- utilidades
+  function normalizar(c) { return (c || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+  function formatar(c) { c = normalizar(c).slice(0, 10); return c.length > 5 ? c.slice(0, 5) + "-" + c.slice(5) : c; }
+  function el(tag, attrs, texto) {
+    var e = document.createElement(tag);
+    if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (texto != null) e.textContent = texto;
+    return e;
+  }
+  // "PENDÊNCIA – PROCURE A PREFEITURA" -> "Pendência – procure a Prefeitura" (mantém siglas e nomes próprios)
+  var MANTER = { "prefeitura": "Prefeitura", "crf": "CRF", "reurb": "REURB", "reurb-s": "REURB-S", "reurb-e": "REURB-E" };
+  function capital(s) {
+    s = (s || "").toLowerCase().replace(/[\wÀ-ÿ-]+/g, function (w) { return MANTER[w] || w; });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function mostrar(id) { ["ok", "nao", "erro"].forEach(function (x) { $(x).hidden = x !== id; }); }
+
+  // ---------- Supabase: só a função pública reurb_consultar
+  function buscar(hash) {
+    var url = String(CFG.supabaseUrl || "").replace(/\/+$/, "") + "/rest/v1/rpc/reurb_consultar";
+    return fetch(url, {
+      method: "POST",
+      headers: { "apikey": CFG.supabaseAnon, "Authorization": "Bearer " + CFG.supabaseAnon,
+                 "Content-Type": "application/json" },
+      body: JSON.stringify({ p_hash: hash })
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  // ---------- resultado
+  function exibir(p) {
+    var dl = $("dados");
+    dl.innerHTML = "";
+    [["Beneficiário(a)", p.nome], ["CPF", p.cpf], ["Processo nº", p.processo], ["Modalidade", p.modalidade],
+     ["Imóvel", p.imovel], ["Cadastrado em", p.cadastro]].forEach(function (x) {
+      if (!x[1]) return;
+      dl.appendChild(el("dt", null, x[0]));
+      dl.appendChild(el("dd", null, x[1]));
+    });
+
+    var lista = p.lista || [];
+    var tipoDe = {};
+    lista.forEach(function (s) { tipoDe[s.nome] = s.tipo; });
+    var etapas = lista.filter(function (s) { return s.tipo === "etapa"; }).map(function (s) { return s.nome; });
+    var tipo = tipoDe[p.status] || "etapa";
+    var eventos = p.eventos || [];
+
+    // etapa alcançada: a atual, ou (em pendência/arquivado) a última etapa que aparece no histórico
+    var idx = etapas.indexOf(p.status);
+    if (idx < 0) {
+      eventos.forEach(function (e) { var i = etapas.indexOf(e.status); if (i > idx) idx = i; });
+    }
+    var concluido = idx === etapas.length - 1 && tipo === "etapa";
+
+    var st = $("status");
+    st.textContent = capital(p.status);
+    st.className = "status" + (tipo === "pendencia" ? " pendencia" : tipo === "final" ? " final" : concluido ? " concluido" : "");
+    $("desde").textContent = p.atualizado ? "Atualizado em " + p.atualizado : "";
+
+    var temMsg = !!(p.mensagem || tipo === "pendencia");
+    $("msg").hidden = !temMsg;
+    $("msg").className = "msg" + (tipo === "pendencia" ? " pendencia" : "");
+    $("msgTit").textContent = tipo === "pendencia" ? "⚠ Há uma pendência no seu processo" : "Mensagem da Prefeitura";
+    $("msgTxt").textContent = p.mensagem || "Procure a Prefeitura, com o seu comprovante, para saber o que falta.";
+
+    // quando cada etapa começou
+    var desde = {};
+    eventos.forEach(function (e) { if (!desde[e.status]) desde[e.status] = (e.data || "").split(" ")[0]; });
+    var ol = $("etapas");
+    ol.innerHTML = "";
+    etapas.forEach(function (et, i) {
+      var cls = i < idx || (i === idx && concluido) ? "feito" : i === idx ? "atual" : "futuro";
+      var li = el("li", { "class": cls });
+      if (cls === "atual") li.setAttribute("aria-current", "step");
+      li.appendChild(el("span", { "class": "bola", "aria-hidden": "true" }, cls === "feito" ? "✓" : String(i + 1)));
+      li.appendChild(el("span", { "class": "nome-et" }, capital(et)));
+      if (cls !== "futuro" && desde[et]) li.appendChild(el("span", { "class": "desde" }, "desde " + desde[et]));
+      ol.appendChild(li);
+    });
+
+    var ul = $("hist");
+    ul.innerHTML = "";
+    eventos.slice().reverse().forEach(function (e) {
+      var li = el("li");
+      li.appendChild(el("span", { "class": "d" }, e.data || ""));
+      li.appendChild(el("strong", null, capital(e.status)));
+      if (e.mensagem) li.appendChild(el("span", { "class": "m" }, e.mensagem));
+      ul.appendChild(li);
+    });
+    $("cardHist").hidden = eventos.length === 0;
+    mostrar("ok");
+  }
+
+  function consultar(codigo) {
+    var c = normalizar(codigo);
+    if (c.length !== 10) { mostrar("nao"); return; }
+    if (!/^https:\/\//.test(CFG.supabaseUrl || "") && !/^http:\/\/(127\.0\.0\.1|localhost)/.test(CFG.supabaseUrl || "")) {
+      $("erroMsg").textContent = "Página ainda não configurada (endereço do Supabase).";
+      mostrar("erro");
+      return;
+    }
+    $("btn").disabled = true;
+    sha256(c).then(buscar).then(function (p) {
+      p ? exibir(p) : mostrar("nao");
+      try { history.replaceState(null, "", "?c=" + formatar(c)); } catch (e) {}
+    }).catch(function () {
+      $("erroMsg").textContent = "Não foi possível conectar. Verifique a internet e tente novamente.";
+      mostrar("erro");
+    }).then(function () { $("btn").disabled = false; });
+  }
+
+  var inp = $("codigo");
+  inp.addEventListener("input", function () {
+    var fim = inp.value.length === inp.selectionStart;
+    inp.value = formatar(inp.value);
+    if (fim) inp.selectionStart = inp.selectionEnd = inp.value.length;
+  });
+  $("form").addEventListener("submit", function (e) { e.preventDefault(); consultar(inp.value); });
+
+  var inicial = new URLSearchParams(location.search).get("c");
+  if (inicial) { inp.value = formatar(inicial); consultar(inicial); }
+})();
+</script>
+</body>
+</html>
