@@ -13,7 +13,7 @@
   //  chave "service_role".
   // ============================================================================
   window.REURB_CONFIG = {
-    supabaseUrl:  "https://yujymlzbsoxpthivvawn.supabase.co/rest/v1/",
+    supabaseUrl:  "https://yujymlzbsoxpthivvawn.supabase.co",
     supabaseAnon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1anltbHpic294cHRoaXZ2YXduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTM0NTYsImV4cCI6MjEwODc4OTQ1Nn0.oiF4zF6Zdd7dHw9vw_p_YNPAs7Aj9ZB0-DLQs5kB1K8"
   };
 </script>
@@ -203,7 +203,9 @@
 
   // ---------- Supabase: só a função pública reurb_consultar
   function buscar(hash) {
-    var url = String(CFG.supabaseUrl || "").replace(/\/+$/, "") + "/rest/v1/rpc/reurb_consultar";
+    // aceita o endereço com ou sem "/rest/v1/" no fim
+    var url = String(CFG.supabaseUrl || "").trim().replace(/\/+$/, "").replace(/\/rest\/v1.*$/, "") +
+              "/rest/v1/rpc/reurb_consultar";
     return fetch(url, {
       method: "POST",
       headers: { "apikey": CFG.supabaseAnon, "Authorization": "Bearer " + CFG.supabaseAnon,
